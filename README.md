@@ -1,6 +1,6 @@
 # Kyōka Suigetsu
 
-**Range clock, weekday / hour / month distributions and expected range for NQ, ES and RTY**
+**Range clock, weekday / hour / month distributions and expected range for NQ, ES, RTY and YM**
 
 TradingView indicator, Pine Script v6. Open source under the Mozilla Public License 2.0.
 
@@ -23,16 +23,16 @@ It runs in its own pane, on the full trading day (18:00–17:00 ET).
   - the last 1, 5 and 22 days' ranges, anchored to the past year;
   - yesterday's move;
   - inside days, holidays, opex Friday and the turn of the month.
-  It was fitted on NQ, ES and RTY 2010–2026.
+  It was fitted on NQ, ES and RTY 2010–2026. YM uses the pooled fit: on YM 2019–26 it beat the typical day in 8/8 years with 16.5% less error, and scored better than a YM-only fit (0.312 vs 0.317).
   - A live projection blends the forecast with the range made so far, hour by hour.
-  - The chance today's high or low is already in comes from how far price is from them and how much of the day's volatility is still to come. Tested 2025–26 it was well calibrated, and 23–25% sharper than the plain base rate for the hour (NQ 25%, ES 23%, RTY 25%). It needs a chart of 60 minutes or lower.
+  - The chance today's high or low is already in comes from how far price is from them and how much of the day's volatility is still to come. Tested 2025–26 it was well calibrated, and 23–25% sharper than the plain base rate for the hour (NQ 25%, ES 23%, RTY 25%, YM 23%). It needs a chart of 60 minutes or lower.
 - **Cards:**
   - **status:** range, ATR, expected and projected range, high / low in, net, hour, month, weekday;
   - **weekdays**, **months** and **hours**.
 
 ## How to use
 
-- Built for CME index futures on continuous charts: **NQ1!**, **ES1!** and **RTY1!**. RTY uses its own profile.
+- Built for CME index futures on continuous charts: **NQ1!**, **ES1!**, **RTY1!** and **YM1!**. RTY uses its own profile. YM uses the pooled fit and the NQ / ES profile, both tested on YM.
 - Intraday charts; the live projection and the high / low odds need 60 minutes or lower.
 
 ## Credits
@@ -49,6 +49,10 @@ It runs in its own pane, on the full trading day (18:00–17:00 ET).
 ## More screenshots
 
 ![range_clock_mockup.png](images/range_clock_mockup.png)
+
+![Kyōka on YM1!](images/Kyoka_YM_mock.png)
+
+*YM1!, Wed 28 Oct 2026 at 11:00 ET: the pooled expected range and the NQ / ES variance profile.*
 
 ## License
 

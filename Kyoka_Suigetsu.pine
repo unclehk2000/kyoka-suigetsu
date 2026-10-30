@@ -13,11 +13,12 @@
 //   histogram and the session strip share the same time axis.
 // Distributions — weekday columns, hour-of-high/low profile and month-of-year seasonality, every day / year as a dot.
 // Expected range — today's range forecast from the last 1, 5 and 22 days' ranges anchored to the past year, yesterday's
-//   move, inside days, holidays, opex Friday and turn of month (fitted on NQ / ES / RTY 2010–2026), a live projection
+//   move, inside days, holidays, opex Friday and turn of month (fitted on NQ / ES / RTY 2010–2026; YM uses the pooled fit,
+//   tested on YM 2019–2026), a live projection
 //   that blends it with the range made so far, hour by hour, and the chance today's high / low is already in.
 // Cards — status (range, ATR, expected and projected range, high / low in, net, hour, month, weekday), weekdays, months
 //   and hours.
-// Full trading day only (18:00–17:00 ET). Built for CME index futures on continuous charts (NQ1!, ES1!, RTY1!).
+// Full trading day only (18:00–17:00 ET). Built for CME index futures on continuous charts (NQ1!, ES1!, RTY1!, YM1!).
 //
 // Distribution column layout inspired by "Day Of Week Price Distribution" by LuxAlgo (CC BY-NC-SA 4.0).
 // Written from scratch; no LuxAlgo code is used.
@@ -52,11 +53,11 @@ byBase   = input.string("Last N days", "Baseline", options = ["Last N days", "Sa
 bandCI   = input.string("80%", "Neutral zone", options = ["68%", "80%", "90%", "95%"], group = gS, tooltip = "Neutral = inside this confidence band around the median at the same time of day. The band is the uncertainty of the median itself, so it narrows as the sample grows. Wider = more days read Neutral.", display = display.none)
 
 gX = "Expected range"
-xOn    = input.bool(true, "Expected range and live projection", group = gX, tooltip = "Expected: today's range forecast from the last 1, 5 and 22 days' ranges anchored to the past year, yesterday's move, inside days, holidays, opex Friday and turn of month. Walk-forward 2013–2026 it beat the median of the last 30 days in 13/14 (NQ), 14/14 (ES) and 13/14 (RTY) years. Projected: the range so far, scaled by the typical share of the day done by this hour, blended with the expected range — mostly the forecast early in the session, mostly the live range by midday.", display = display.none)
-xMkt   = input.string("Auto", "Model", options = ["Auto", "NQ", "ES", "RTY", "Pooled"], group = gX, tooltip = "Auto: NQ / MNQ use the NQ fit, ES / MES the ES fit, RTY / M2K the RTY fit, anything else the pooled fit.", display = display.none)
+xOn    = input.bool(true, "Expected range and live projection", group = gX, tooltip = "Expected: today's range forecast from the last 1, 5 and 22 days' ranges anchored to the past year, yesterday's move, inside days, holidays, opex Friday and turn of month. Walk-forward 2013–2026 it beat the median of the last 30 days in 13/14 (NQ), 14/14 (ES) and 13/14 (RTY) years, and on YM (pooled fit, 2019–2026) in 8/8 years, with 16.5% less error. Projected: the range so far, scaled by the typical share of the day done by this hour, blended with the expected range — mostly the forecast early in the session, mostly the live range by midday. On YM 2025–26 the weights scored the same as weights fitted on YM itself (error 0.214 both).", display = display.none)
+xMkt   = input.string("Auto", "Model", options = ["Auto", "NQ", "ES", "RTY", "Pooled"], group = gX, tooltip = "Auto: NQ / MNQ use the NQ fit, ES / MES the ES fit, RTY / M2K the RTY fit, YM / MYM and anything else the pooled fit.\nOn YM the pooled fit was as good as a YM-only fit: walk-forward 2019–2026, error 0.312 vs 0.317, and the YM fit won only 2 of 8 years. So YM gets no constants of its own.", display = display.none)
 xBand  = input.string("P25–P75", "Band", options = ["P25–P75", "P10–P90"], group = gX, display = display.none)
 xCal   = input.bool(true, "Today's drivers on the status card", group = gX, tooltip = "Which of today's conditions move the expected range, with their multipliers: inside day, holidays, opex Friday, turn of month, weekday, yesterday's move.", display = display.none)
-xExt   = input.bool(true, "Chance the high / low is already in", group = gX, tooltip = "From how far price is from today's high and low, and how much volatility is still to come before 17:00 ET (the expected range × the share of the day's variance still ahead, measured on NQ, ES and RTY 1-minute data; RTY uses its own profile). Tested 2025–26: well calibrated, and 23–25% sharper than the plain base rate for the hour (NQ 25%, ES 23%, RTY 25%; about 40% from 09:30 on). Needs an intraday chart of 60 minutes or lower.", display = display.none)
+xExt   = input.bool(true, "Chance the high / low is already in", group = gX, tooltip = "From how far price is from today's high and low, and how much volatility is still to come before 17:00 ET (the expected range × the share of the day's variance still ahead, measured on NQ, ES and RTY 1-minute data; RTY uses its own profile, YM the NQ / ES one, which scored the same as YM's own). Tested 2025–26: well calibrated, and 23–25% sharper than the plain base rate for the hour (NQ 25%, ES 23%, RTY 25%, YM 23%; about 40% from 09:30 on). Needs an intraday chart of 60 minutes or lower.", display = display.none)
 colExp = input.color(#ab47bc, "Expected / projected", group = gX, display = display.none)
 
 gR = "Reference cards"
@@ -1447,7 +1448,7 @@ if barstate.islast and (showDash and not na(tS))
     bool   hasX = xOn and not na(xLog)
     float  refPts = hasX ? expPts : dayPts
     string toGo = na(refPts) ? "—" : rPts >= refPts ? (hasX ? "✓ expected reached" : "✓ typical day reached") : "+" + str.tostring(refPts - rPts, "0") + (hasX ? " pts to expected" : " pts to typical")
-    string tipX = "Expected range for today (" + mktR + " model): last 1 / 5 / 22 days' ranges anchored to the past year, yesterday's move, inside day, holidays, opex Friday, turn of month. " + bandTx + " band. Typical of the " + bl + ": " + (na(dayMed) ? "—" : f2(dayMed) + "% ≈ " + str.tostring(dayPts, "0") + " pts") + "."
+    string tipX = "Expected range for today (" + (mktR == "Pooled" and xMkt == "Auto" and (syminfo.root == "YM" or syminfo.root == "MYM") ? "pooled model, tested on YM" : mktR + " model") + "): last 1 / 5 / 22 days' ranges anchored to the past year, yesterday's move, inside day, holidays, opex Friday, turn of month. " + bandTx + " band. Typical of the " + bl + ": " + (na(dayMed) ? "—" : f2(dayMed) + "% ≈ " + str.tostring(dayPts, "0") + " pts") + "."
     string tipP = "Projected final range: the range so far ÷ the typical share of the day done by now, blended with the expected range (mostly the forecast early, mostly the live range by midday). " + bandTx + " band."
     string pill2 = prjSt == "Above" ? "▲ ABOVE EXP" : prjSt == "Below" ? "▼ BELOW EXP" : prjSt == "Neutral" ? "● IN BAND" : "—"
     string tipE = "Chance today's high / low is already in: how far price is from each, against the volatility still to come before 17:00 ET (expected range × the share of the day's variance still ahead, from NQ, ES and RTY 1-minute data 2018–2026; RTY has its own profile). Random-walk geometry, not a signal. Tested on 2025–26 it was well calibrated."
